@@ -1,4 +1,5 @@
 hypogeum
 ========
 
-Brunch skeleton: Tornado, Backbone, SQL Alchemy, CRUD
+restful rTorrent web front end
+Tornado, Backbone, SQL Alchemy, CRUD
