@@ -112,7 +112,9 @@ window.require.define({"application": function(exports, require, module) {
           }
         ]
       });
-      return this.torrentcollection.fetch();
+      return this.torrentcollection.fetch({
+        success: this.torrentcollection.draw
+      });
     },
     makeTorrent: function() {
       var Torrent, TorrentView;
@@ -442,13 +444,19 @@ window.require.define({"lib/base/model": function(exports, require, module) {
   
 }});
 
+window.require.define({"lib/base/templates/default": function(exports, require, module) {
+  module.exports = function(context){ return Jinja.render('', context); };
+}});
+
 window.require.define({"lib/base/view": function(exports, require, module) {
-  var View,
+  var View, defaultTemplate,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   require('helpers/view_helper');
+
+  defaultTemplate = require('./templates/default');
 
   module.exports = View = (function(_super) {
 
@@ -456,8 +464,19 @@ window.require.define({"lib/base/view": function(exports, require, module) {
 
     function View() {
       this.render = __bind(this.render, this);
+
+      this.initialize = __bind(this.initialize, this);
       return View.__super__.constructor.apply(this, arguments);
     }
+
+    View.prototype.template = defaultTemplate;
+
+    View.prototype.initialize = function(options) {
+      if (options.template != null) {
+        this.template = options.template;
+      }
+      return View.__super__.initialize.call(this);
+    };
 
     View.prototype.render = function() {
       return $('#body').html(this.$el.html(this.template(this.model.attributes)));
@@ -516,21 +535,41 @@ window.require.define({"lib/server/view": function(exports, require, module) {
 }});
 
 window.require.define({"lib/torrent/collection": function(exports, require, module) {
-  var Collection, Torrent,
+  var Collection, Torrent, View,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   Collection = require('lib/base/collection');
+
+  View = require('./view');
 
   module.exports = Torrent = (function(_super) {
 
     __extends(Torrent, _super);
 
     function Torrent() {
+      this.draw = __bind(this.draw, this);
       return Torrent.__super__.constructor.apply(this, arguments);
     }
 
     Torrent.prototype.model = require("./model");
+
+    Torrent.prototype.draw = function() {
+      var o, row, v, _i, _len, _ref, _results;
+      row = require('./templates/row');
+      _ref = this.models;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        o = _ref[_i];
+        v = new View({
+          model: o,
+          template: row
+        });
+        _results.push(v.render());
+      }
+      return _results;
+    };
 
     return Torrent;
 

@@ -19,7 +19,8 @@ module.exports = Application =
     @torrentcollection = new TorrentCollection()
     #@torrentcollection.filter({"and":[{"and":["id>=0","id=3"]},{"or":["hash=335990D615594B9BE409CCFEB95864E24EC702C7","hash=doo"]}]})
     @torrentcollection.filter("and":[{"and":["state>=0","state<=3"]}])
-    @torrentcollection.fetch()
+    @torrentcollection.fetch({success:@torrentcollection.draw})
+    
 
   makeTorrent: ->
     Torrent = require 'lib/torrent/model'
