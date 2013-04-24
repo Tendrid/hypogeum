@@ -2,14 +2,15 @@ from app.lib.base.model import Base
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Binary
 from sqlalchemy.orm import relationship
 
-import bencode
-import hashlib
+#import bencode
+#import hashlib
 import base64
 
-import xmlrpc2scgi as xmlrpc
-import xmlrpclib
+from rtorrentrpc import RPCMixin
+#import xmlrpc2scgi as xmlrpc
+#import xmlrpclib
 
-class Torrent(Base):
+class Torrent(Base, RPCMixin):
     __tablename__ = 'torrent'
     #columns
     id = Column(Integer, primary_key=True)
@@ -17,6 +18,7 @@ class Torrent(Base):
     hash = Column(String(64), nullable=False)
     owner_id = Column(Integer, ForeignKey("user.id"), autoincrement=False, nullable=True, default=0)
     name = Column(String(128), nullable=False)
+    path = Column(String(128), nullable=False)
     file = Column(Binary(), nullable=False)
     #references
     owner = relationship("User", foreign_keys=[owner_id])
@@ -81,33 +83,4 @@ class Torrent(Base):
             else:
                 return None
 
-    def _checkTorrent(self):
-        if self.hash not in self.rtorrent.download_list():
-            self.rtorrent.load_raw_verbose(xmlrpclib.Binary(self.file))
-
-    def tReload(self):
-        if self.state == 1:
-            self.tStart()
-        else:
-            self.tStop()
-
-    def tStart(self):
-        self._checkTorrent()
-        self.rtorrent.d.start(self.hash)
-
-    def tStop(self):
-        self._checkTorrent()
-        self.rtorrent.d.stop(self.hash)
-
-    def tDelete(self):
-        self._checkTorrent()
-        self.rtorrent.d.erase(self.hash)
-
-    def tCheckHash(self):
-        self._checkTorrent()
-        self.rtorrent.d.check_hash(self.hash)
-
-    def calcHash(self,file):
-        mi = bencode.bdecode(file)
-        return hashlib.sha1(bencode.bencode(mi['info'])).hexdigest().upper()
         

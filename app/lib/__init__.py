@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
-from settings import DBURL, RTORRENT_SOCKET
+from settings import *
 import xmlrpc2scgi as xmlrpc
 #import xmlrpclib
 
@@ -25,6 +25,8 @@ def initServer(socket):
     except IOError as e:
         print "rTorrent connection failure on socket {}.  Exiting.".format(socket)
         exit()
+    rtorrent.set_port_range("{}-{}".format(PORT_RANGE[0],PORT_RANGE[1]))
+    print "rTorrent:{} (libtorrent:{}) listening on port range {}".format(rtorrent.system.client_version(), rtorrent.system.library_version(), rtorrent.get_port_range())
     query = db.query(Torrent).filter(Torrent.state!=4)
     tDB = query.all()
     tRT = rtorrent.download_list()
@@ -33,7 +35,7 @@ def initServer(socket):
         if t.hash not in tRT:
             print "loading {}".format(t.hash)
             t.tReload()
-        rtorrent.d.set_directory(t.hash,'/home/tendrid/Downloads')
+        #rtorrent.d.set_directory(t.hash,'/home/tendrid/Downloads')
         print rtorrent.d.get_directory(t.hash)
 
 initServer(RTORRENT_SOCKET)

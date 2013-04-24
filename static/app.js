@@ -592,6 +592,8 @@ window.require.define({"lib/torrent/model": function(exports, require, module) {
       return Torrent.__super__.constructor.apply(this, arguments);
     }
 
+    Torrent.prototype.states = ["stop", "start", "checkHash", "delete"];
+
     Torrent.prototype.readFile = function(file) {
       var reader;
       reader = new FileReader();
@@ -617,11 +619,9 @@ window.require.define({"lib/torrent/templates/row": function(exports, require, m
   module.exports = function(context){ return Jinja.render('{{id}}\
   {{hash}}\
   {{name}}\
-  ', context); };
-}});
-
-window.require.define({"lib/torrent/templates/system": function(exports, require, module) {
-  module.exports = function(context){ return Jinja.render('<input type="file" id="files" name="files[]" multiple />', context); };
+  <a href="#" class="action" data-action="stop">Stop</a>\
+  <a href="#" class="action" data-action="start">Start</a>\
+  <a href="#" class="action" data-action="delete">Delete</a>', context); };
 }});
 
 window.require.define({"lib/torrent/view": function(exports, require, module) {
@@ -637,6 +637,8 @@ window.require.define({"lib/torrent/view": function(exports, require, module) {
     __extends(Server, _super);
 
     function Server() {
+      this.action = __bind(this.action, this);
+
       this.upload = __bind(this.upload, this);
 
       this.events = __bind(this.events, this);
@@ -645,20 +647,32 @@ window.require.define({"lib/torrent/view": function(exports, require, module) {
 
     Server.prototype.events = function() {
       return {
-        "change #files": "upload"
+        "change #files": "upload",
+        "click .action": "action"
       };
     };
 
     Server.prototype.upload = function(evt) {
-      var f, files, _i, _len;
+      var f, files, _i, _len, _results;
       files = evt.target.files;
+      _results = [];
       for (_i = 0, _len = files.length; _i < _len; _i++) {
         f = files[_i];
         if (!f.type.match('torrent.*')) {
           continue;
+        } else {
+          _results.push(void 0);
         }
       }
-      return console.log(this.model.readFile(f));
+      return _results;
+    };
+
+    Server.prototype.action = function(evt) {
+      var action, state;
+      action = $(evt.target).data('action');
+      state = this.model.states.indexOf(action);
+      this.model.set('state', state);
+      return this.model.save();
     };
 
     return Server;

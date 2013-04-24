@@ -2,6 +2,8 @@ Model = require 'lib/base/model'
 
 module.exports = class Torrent extends Model
 
+  states: ["stop","start","checkHash","delete"]
+
   readFile: (file) ->
     reader = new FileReader()
     
