@@ -4,17 +4,18 @@ Collection = require 'lib/base/collection'
 module.exports = class Torrent extends Collection
   model: require "./model"
 
-  saveEach: (callback = =>) =>
+  saveEach: () =>
     for o in @models
-      o.save().then (dataMeats)=> callback(dataMeats)
+      console.log o.name
+      #o.save().then (dataMeats)=> callback(dataMeats)
     return
 
-  readFiles: (files) =>
+  readFiles: (files, callback = =>) =>
     for f in files
       if !f.type.match('torrent.*')
         continue
       m = new @model()
-      m.readFile f
+      m.readFile f, callback
       @add(m)
 
   draw: =>

@@ -4,7 +4,7 @@ module.exports = class Torrent extends Model
 
   states: ["stop","start","checkHash","delete"]
 
-  readFile: (file) ->
+  readFile: (file, callback) ->
     reader = new FileReader()
     
     # closure to capture the file information.
@@ -13,8 +13,8 @@ module.exports = class Torrent extends Model
         cls.set
           name: theFile.name.replace('.torrent','')
           file: e.target.result
-  
-    )(file, this)
+        callback(cls)
+    )(file, this, callback)
     
     # Read in the image file as a data URL.
     reader.readAsDataURL file

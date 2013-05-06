@@ -99,7 +99,7 @@ class crud(BaseHandler):
             if func == 'raw':
                 return obj
             retVal = getattr(obj,func)(current_user=self.current_user,postdata=postdata,app=self)
-            self.db.flush()
+            self.db.commit()
             return retVal
             #self.finish(json_encode(retVal))
         except (KeyError, exc.NoResultFound) as e:

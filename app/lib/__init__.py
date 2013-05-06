@@ -30,6 +30,7 @@ def initServer(socket):
     query = db.query(Torrent).filter(Torrent.state!=4)
     tDB = query.all()
     tRT = rtorrent.download_list()
+    rtorrent.set_xmlrpc_size_limit(16777216)
     for t in tDB:
         print "checking {}".format(t.hash)
         if t.hash not in tRT:
