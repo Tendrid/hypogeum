@@ -3,7 +3,7 @@ application = require 'application'
 module.exports = class Collection extends Backbone.Collection
   
   _filter:{}
-  
+    
   url: =>
     _url = '/rest/'+@getName()+'/' +'?where=' + JSON.stringify(@_filter)
 

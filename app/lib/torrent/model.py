@@ -18,7 +18,7 @@ class Torrent(Base, RPCMixin):
     hash = Column(String(64), nullable=False)
     owner_id = Column(Integer, ForeignKey("user.id"), autoincrement=False, nullable=True, default=0)
     name = Column(String(128), nullable=False)
-    path = Column(String(128), nullable=False)
+    path = Column(String(128), default='')
     file = Column(Binary(), nullable=False)
     #references
     owner = relationship("User", foreign_keys=[owner_id])
@@ -45,7 +45,7 @@ class Torrent(Base, RPCMixin):
         )
         print torrentData
         #print conn.d.get_base_path(self.hash)
-        return ["id","name","hash","owner","state"]
+        return ["id","name","hash","owner","state","path"]
 
     def post (self, *args, **kwargs):
         #print kwargs['postdata']['file']

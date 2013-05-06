@@ -99,7 +99,7 @@ window.require.define({"application": function(exports, require, module) {
         options = {};
       }
       this.errorLevel = attributes.errorLevel || 'CRITICAL';
-      return this.getTorrents();
+      return this.makeTorrent();
     },
     getTorrents: function() {
       var TorrentCollection;
@@ -117,14 +117,14 @@ window.require.define({"application": function(exports, require, module) {
       });
     },
     makeTorrent: function() {
-      var Torrent, TorrentView;
-      Torrent = require('lib/torrent/model');
+      var TorrentCollection, TorrentView;
       TorrentView = require('lib/torrent/view');
-      this.torrent = new Torrent();
+      TorrentCollection = require('lib/torrent/collection');
+      this.torrentcollection = new TorrentCollection();
       this.torrentview = new TorrentView({
-        model: this.torrent
+        collection: this.torrentcollection
       });
-      this.torrentview.template = require('lib/torrent/templates/system');
+      this.torrentview.template = require('lib/torrent/templates/create');
       return this.torrentview.render();
     },
     runTests: function() {
@@ -472,14 +472,20 @@ window.require.define({"lib/base/view": function(exports, require, module) {
     View.prototype.template = defaultTemplate;
 
     View.prototype.initialize = function(options) {
+      if (options == null) {
+        options = {};
+      }
       if (options.template != null) {
         this.template = options.template;
       }
-      return View.__super__.initialize.call(this);
+      return View.__super__.initialize.call(this, options);
     };
 
     View.prototype.render = function() {
-      return $('#body').html(this.$el.html(this.template(this.model.attributes)));
+      return $('#body').html(this.$el.html(this.template({
+        model: this.model,
+        collection: this.collection
+      })));
     };
 
     return View;
@@ -535,14 +541,12 @@ window.require.define({"lib/server/view": function(exports, require, module) {
 }});
 
 window.require.define({"lib/torrent/collection": function(exports, require, module) {
-  var Collection, Torrent, View,
+  var Collection, Torrent,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   Collection = require('lib/base/collection');
-
-  View = require('./view');
 
   module.exports = Torrent = (function(_super) {
 
@@ -550,10 +554,44 @@ window.require.define({"lib/torrent/collection": function(exports, require, modu
 
     function Torrent() {
       this.draw = __bind(this.draw, this);
+
+      this.readFiles = __bind(this.readFiles, this);
+
+      this.saveEach = __bind(this.saveEach, this);
       return Torrent.__super__.constructor.apply(this, arguments);
     }
 
     Torrent.prototype.model = require("./model");
+
+    Torrent.prototype.saveEach = function(callback) {
+      var o, _i, _len, _ref,
+        _this = this;
+      if (callback == null) {
+        callback = function() {};
+      }
+      _ref = this.models;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        o = _ref[_i];
+        o.save().then(function(dataMeats) {
+          return callback(dataMeats);
+        });
+      }
+    };
+
+    Torrent.prototype.readFiles = function(files) {
+      var f, m, _i, _len, _results;
+      _results = [];
+      for (_i = 0, _len = files.length; _i < _len; _i++) {
+        f = files[_i];
+        if (!f.type.match('torrent.*')) {
+          continue;
+        }
+        m = new this.model();
+        m.readFile(f);
+        _results.push(this.add(m));
+      }
+      return _results;
+    };
 
     Torrent.prototype.draw = function() {
       var o, row, v, _i, _len, _ref, _results;
@@ -562,7 +600,7 @@ window.require.define({"lib/torrent/collection": function(exports, require, modu
       _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         o = _ref[_i];
-        v = new View({
+        v = new this.view({
           model: o,
           template: row
         });
@@ -599,9 +637,8 @@ window.require.define({"lib/torrent/model": function(exports, require, module) {
       reader = new FileReader();
       reader.onload = (function(theFile, cls) {
         return function(e) {
-          console.log(cls);
           return cls.set({
-            name: theFile.name,
+            name: theFile.name.replace('.torrent', ''),
             file: e.target.result
           });
         };
@@ -615,67 +652,74 @@ window.require.define({"lib/torrent/model": function(exports, require, module) {
   
 }});
 
+window.require.define({"lib/torrent/templates/create": function(exports, require, module) {
+  module.exports = function(context){ return Jinja.render('<input type="file" id="files" name="files[]" multiple />', context); };
+}});
+
 window.require.define({"lib/torrent/templates/row": function(exports, require, module) {
-  module.exports = function(context){ return Jinja.render('{{id}}\
-  {{hash}}\
-  {{name}}\
+  module.exports = function(context){ return Jinja.render('{{model.id}}\
+  {{model.hash}}\
+  {{model.path}}\
+  {{model.name}}\
   <a href="#" class="action" data-action="stop">Stop</a>\
   <a href="#" class="action" data-action="start">Start</a>\
   <a href="#" class="action" data-action="delete">Delete</a>', context); };
 }});
 
 window.require.define({"lib/torrent/view": function(exports, require, module) {
-  var Server, View,
+  var Torrent, View,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   View = require('lib/base/view');
 
-  module.exports = Server = (function(_super) {
+  module.exports = Torrent = (function(_super) {
 
-    __extends(Server, _super);
+    __extends(Torrent, _super);
 
-    function Server() {
+    function Torrent() {
       this.action = __bind(this.action, this);
+
+      this.update = __bind(this.update, this);
 
       this.upload = __bind(this.upload, this);
 
       this.events = __bind(this.events, this);
-      return Server.__super__.constructor.apply(this, arguments);
+      return Torrent.__super__.constructor.apply(this, arguments);
     }
 
-    Server.prototype.events = function() {
+    Torrent.prototype.events = function() {
       return {
         "change #files": "upload",
         "click .action": "action"
       };
     };
 
-    Server.prototype.upload = function(evt) {
-      var f, files, _i, _len, _results;
-      files = evt.target.files;
-      _results = [];
-      for (_i = 0, _len = files.length; _i < _len; _i++) {
-        f = files[_i];
-        if (!f.type.match('torrent.*')) {
-          continue;
-        } else {
-          _results.push(void 0);
-        }
+    Torrent.prototype.upload = function(evt) {
+      var files;
+      if (this.collection != null) {
+        files = evt.target.files;
+        this.collection.readFiles(files);
+        return this.collection.saveEach(this.update);
       }
-      return _results;
     };
 
-    Server.prototype.action = function(evt) {
+    Torrent.prototype.update = function(response) {
+      return console.log(response);
+    };
+
+    Torrent.prototype.action = function(evt) {
       var action, state;
-      action = $(evt.target).data('action');
-      state = this.model.states.indexOf(action);
-      this.model.set('state', state);
-      return this.model.save();
+      if (this.model != null) {
+        action = $(evt.target).data('action');
+        state = this.model.states.indexOf(action);
+        this.model.set('state', state);
+        return this.model.save();
+      }
     };
 
-    return Server;
+    return Torrent;
 
   })(View);
   

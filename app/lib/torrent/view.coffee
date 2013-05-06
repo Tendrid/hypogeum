@@ -1,19 +1,24 @@
 View = require 'lib/base/view'
 
-module.exports = class Server extends View 
+module.exports = class Torrent extends View 
   
   events:=>
     "change #files":"upload"
     "click .action":"action"
 
   upload:(evt)=>
-    files = evt.target.files
-    for f in files
-      if !f.type.match('torrent.*')
-        continue
-    
+    if @collection?
+      #collection = new @collection()
+      files = evt.target.files
+      @collection.readFiles(files)
+      @collection.saveEach @update
+      
+  update: (response) =>
+    console.log response
+      
   action:(evt)=>
-    action = $(evt.target).data('action')
-    state = @model.states.indexOf(action)
-    @model.set('state',state)
-    @model.save()
+    if @model?
+      action = $(evt.target).data('action')
+      state = @model.states.indexOf(action)
+      @model.set('state',state)
+      @model.save()

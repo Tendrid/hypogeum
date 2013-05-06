@@ -10,9 +10,8 @@ module.exports = class Torrent extends Model
     # closure to capture the file information.
     reader.onload = ((theFile, cls) ->
       (e) ->
-        console.log cls
         cls.set
-          name: theFile.name
+          name: theFile.name.replace('.torrent','')
           file: e.target.result
   
     )(file, this)

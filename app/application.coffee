@@ -11,8 +11,8 @@ module.exports = Application =
 
   initialize:(attributes={}, options={}) ->
     @errorLevel = attributes.errorLevel || 'CRITICAL'
-    #@makeTorrent()
-    @getTorrents()
+    @makeTorrent()
+    #@getTorrents()
 
   getTorrents: ->
     TorrentCollection = require 'lib/torrent/collection'
@@ -23,11 +23,14 @@ module.exports = Application =
     
 
   makeTorrent: ->
-    Torrent = require 'lib/torrent/model'
+    #Torrent = require 'lib/torrent/model'
     TorrentView = require 'lib/torrent/view'
-    @torrent = new Torrent()
-    @torrentview = new TorrentView({model:@torrent})
-    @torrentview.template = require 'lib/torrent/templates/system'
+    TorrentCollection = require 'lib/torrent/collection'
+    #@torrent = new Torrent()
+    @torrentcollection = new TorrentCollection()
+    #@torrentview = new TorrentView({model:@torrent})
+    @torrentview = new TorrentView({collection:@torrentcollection})
+    @torrentview.template = require 'lib/torrent/templates/create'
     @torrentview.render()
     
   runTests: ->
