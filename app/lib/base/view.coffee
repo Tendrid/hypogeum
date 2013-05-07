@@ -19,6 +19,24 @@ module.exports = class View extends Backbone.View
   initialize:(options={})=>
     @_init(options)
     super(options)
+    if @model?
+      @model.on "change", @_attrChange
+      @model.on "__error", @onError
+
+  _attrChange: (model,event)=>
+    b = @bindAttr()
+    for i,o of event.changes
+      if o and b[i]?
+        if b[i]["func"]?
+          v = b[i]["func"](model.get(i))
+        else
+          v = model.get(i)
+        if b[i]["id"]?
+          @$el.find(b[i]["id"]).html v
+          
+  onError:(e)=>
+    console.info e.severity,e.error
+    return
 
   render: =>
     tagName = @tagName || 'div'

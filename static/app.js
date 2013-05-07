@@ -299,6 +299,8 @@ window.require.define({"lib/base/model": function(exports, require, module) {
 
       this.castObjects = __bind(this.castObjects, this);
 
+      this["throw"] = __bind(this["throw"], this);
+
       this.parse = __bind(this.parse, this);
 
       this.getName = __bind(this.getName, this);
@@ -370,12 +372,19 @@ window.require.define({"lib/base/model": function(exports, require, module) {
           eset = _ref[i];
           for (_i = 0, _len = eset.length; _i < _len; _i++) {
             err = eset[_i];
-            console.info(i, err);
+            this["throw"](i, err);
           }
         }
       }
       delete response['__errors'];
       return this.castObjects(response, true);
+    };
+
+    Model.prototype["throw"] = function(severity, error) {
+      return this.trigger("__error", {
+        severity: severity,
+        error: error
+      });
     };
 
     Model.prototype.castObjects = function(data, root) {
@@ -469,6 +478,10 @@ window.require.define({"lib/base/view": function(exports, require, module) {
 
       this.render = __bind(this.render, this);
 
+      this.onError = __bind(this.onError, this);
+
+      this._attrChange = __bind(this._attrChange, this);
+
       this.initialize = __bind(this.initialize, this);
 
       this._init = __bind(this._init, this);
@@ -496,7 +509,40 @@ window.require.define({"lib/base/view": function(exports, require, module) {
         options = {};
       }
       this._init(options);
-      return View.__super__.initialize.call(this, options);
+      View.__super__.initialize.call(this, options);
+      if (this.model != null) {
+        this.model.on("change", this._attrChange);
+        return this.model.on("__error", this.onError);
+      }
+    };
+
+    View.prototype._attrChange = function(model, event) {
+      var b, i, o, v, _ref, _results;
+      b = this.bindAttr();
+      _ref = event.changes;
+      _results = [];
+      for (i in _ref) {
+        o = _ref[i];
+        if (o && (b[i] != null)) {
+          if (b[i]["func"] != null) {
+            v = b[i]["func"](model.get(i));
+          } else {
+            v = model.get(i);
+          }
+          if (b[i]["id"] != null) {
+            _results.push(this.$el.find(b[i]["id"]).html(v));
+          } else {
+            _results.push(void 0);
+          }
+        } else {
+          _results.push(void 0);
+        }
+      }
+      return _results;
+    };
+
+    View.prototype.onError = function(e) {
+      console.info(e.severity, e.error);
     };
 
     View.prototype.render = function() {
@@ -727,13 +773,15 @@ window.require.define({"lib/torrent/templates/create": function(exports, require
 }});
 
 window.require.define({"lib/torrent/templates/row": function(exports, require, module) {
-  module.exports = function(context){ return Jinja.render('{{model.attributes.id}}\
-  {{model.attributes.hash}}\
-  {{model.attributes.path}}\
-  {{model.attributes.name}}\
-  <a href="#" class="action" data-action="stop">Stop</a>\
-  <a href="#" class="action" data-action="start">Start</a>\
-  <a href="#" class="action" data-action="delete">Delete</a>', context); };
+  module.exports = function(context){ return Jinja.render('<span class="id">{{model.attributes.id}}</span>\
+  <span class="hash">{{model.attributes.hash}}</span>\
+  <span class="path">{{model.attributes.path}}</span>\
+  <span class="name">{{model.attributes.name}}</span>\
+  <div class="controls">\
+  	<a href="#" class="action state0" data-action="stop">Stop</a>\
+  	<a href="#" class="action state1" data-action="start">Start</a>\
+  	<a href="#" class="action state3" data-action="delete">Delete</a>\
+  </div>', context); };
 }});
 
 window.require.define({"lib/torrent/view": function(exports, require, module) {
@@ -759,6 +807,14 @@ window.require.define({"lib/torrent/view": function(exports, require, module) {
 
       this.render = __bind(this.render, this);
 
+      this.onError = __bind(this.onError, this);
+
+      this.changeState = __bind(this.changeState, this);
+
+      this.changeId = __bind(this.changeId, this);
+
+      this.bindAttr = __bind(this.bindAttr, this);
+
       this.events = __bind(this.events, this);
       return Torrent.__super__.constructor.apply(this, arguments);
     }
@@ -770,8 +826,48 @@ window.require.define({"lib/torrent/view": function(exports, require, module) {
       };
     };
 
+    Torrent.prototype.bindAttr = function() {
+      return {
+        id: {
+          id: ".id",
+          func: this.changeId
+        },
+        hash: {
+          id: ".hash"
+        },
+        path: {
+          id: ".path"
+        },
+        name: {
+          id: ".name"
+        },
+        state: {
+          func: this.changeState
+        }
+      };
+    };
+
+    Torrent.prototype.changeId = function(v) {
+      this.$el.find('.controls').show();
+      return v;
+    };
+
+    Torrent.prototype.changeState = function(v) {
+      this.$el.find(".state" + v).css('background-color', 'red');
+      return v;
+    };
+
+    Torrent.prototype.onError = function(e) {
+      if (e.severity >= 40) {
+        this.$el.html(e.error);
+      }
+    };
+
     Torrent.prototype.render = function() {
       Torrent.__super__.render.call(this);
+      if ((this.model != null) && !this.model.get("id")) {
+        this.$el.find('.controls').hide();
+      }
       return this.list = this.$el.find('ul')[0];
     };
 
@@ -797,10 +893,7 @@ window.require.define({"lib/torrent/view": function(exports, require, module) {
     };
 
     Torrent.prototype.update = function(model) {
-      var _this = this;
-      return model.save().then(function() {
-        return _this.$el.find("#" + model.cid).html('UPLOADED!');
-      });
+      return model.save();
     };
 
     Torrent.prototype.action = function(evt) {

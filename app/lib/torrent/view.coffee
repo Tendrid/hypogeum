@@ -7,8 +7,30 @@ module.exports = class Torrent extends View
     "change #files":"upload"
     "click .action":"action"
 
+  bindAttr:=>
+    id:{id:".id",func:@changeId}
+    hash:{id:".hash"}
+    path:{id:".path"}
+    name:{id:".name"}
+    state:{func:@changeState}
+
+  changeId:(v)=>
+    @$el.find('.controls').show()
+    return v
+
+  changeState:(v)=>
+    @$el.find(".state#{v}").css('background-color','red')
+    return v
+
+  onError:(e)=>
+    if e.severity >= 40
+      @$el.html e.error
+    return
+
   render: =>
     super()
+    if @model? and !@model.get("id")
+      @$el.find('.controls').hide()
     @list = @$el.find('ul')[0]
 
   upload:(evt)=>
@@ -23,7 +45,7 @@ module.exports = class Torrent extends View
       #@collection.saveEach @update
       
   update: (model) =>
-    model.save().then => @$el.find("##{model.cid}").html('UPLOADED!')
+    model.save() #.then => @$el.find("##{model.cid}").append('UPLOADED!')
     #console.log response
     #@render()
       

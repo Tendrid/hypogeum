@@ -28,9 +28,12 @@ module.exports = class Model extends Backbone.Model
     if !_.isEmpty response.__errors
       for i,eset of response.__errors
         for err in eset
-          console.info i, err
+          @throw i, err
     delete response['__errors']
     return @castObjects response, true
+
+  throw: (severity, error) =>
+    @trigger "__error", {severity:severity, error:error}
 
   castObjects: (data,root=false) =>
     @attributes = {}

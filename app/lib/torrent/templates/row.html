@@ -1,7 +1,9 @@
-{{model.attributes.id}}
-{{model.attributes.hash}}
-{{model.attributes.path}}
-{{model.attributes.name}}
-<a href="#" class="action" data-action="stop">Stop</a>
-<a href="#" class="action" data-action="start">Start</a>
-<a href="#" class="action" data-action="delete">Delete</a>
+<span class="id">{{model.attributes.id}}</span>
+<span class="hash">{{model.attributes.hash}}</span>
+<span class="path">{{model.attributes.path}}</span>
+<span class="name">{{model.attributes.name}}</span>
+<div class="controls">
+	<a href="#" class="action state0" data-action="stop">Stop</a>
+	<a href="#" class="action state1" data-action="start">Start</a>
+	<a href="#" class="action state3" data-action="delete">Delete</a>
+</div>
