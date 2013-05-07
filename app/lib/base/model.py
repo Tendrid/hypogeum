@@ -63,7 +63,7 @@ class ModelBase(object):
             try:
                 self.db.commit()
             except IntegrityError:
-                kwargs['app'].logger.log(logging.ERROR,'Duplicate obj applied.  this error message sucks: in {0}'.format(self.__class__.__name__))
+                kwargs['app'].logger.log(logging.ERROR,'{0} already exists'.format(self.__class__.__name__))
                 self.db.rollback()
                 return dict()
             return self.get(*args, **kwargs)
